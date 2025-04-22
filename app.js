@@ -33,7 +33,7 @@ app.post("/register", async (req, res) => {
       });
       let token = jwt.sign({ email: email, userid: user._id }, "secretkey");
       res.cookie("token", token);
-      res.send("User created successfully");
+      res.redirect("/profile");
     });
   });
 });
@@ -52,7 +52,7 @@ app.post("/login", async (req, res) => {
     if (result) {
       let token = jwt.sign({ email: email, userid: user._id }, "secretkey");
       res.cookie("token", token);
-      res.status(200).send("Login successful");
+      res.status(200).redirect("/profile");
     } else res.redirect("/login");
   });
 });
@@ -63,12 +63,24 @@ app.get("/logout", (req, res) => {
 });
 
 app.get("/profile", isLoggedIn, async (req, res) => {
-  console.log(req.user);
-  res.render("login")
+  let user = await userModel.findOne({email: req.user.email}).populate("posts")
+  res.render("profile",{user})
+});
+
+app.post("/post", isLoggedIn, async (req, res) => {
+  let user = await userModel.findOne({email: req.user.email});
+  let{ content } = req.body;
+  let post = await postModel.create({
+    user: user._id,
+    content,
+  })
+  user.posts.push(post._id);
+  await user.save();
+  res.redirect("/profile");
 });
 
 function isLoggedIn(req, res, next){
-  if (req.cookies.token === "") return res.send("You need login");
+  if (req.cookies.token === "") return res.redirect("/login");
   else {
     let data = jwt.verify(req.cookies.token, "secretkey");
     req.user = data;
