@@ -5,6 +5,7 @@ const app = express();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const postModel = require("./models/post");
+const e = require("express");
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
@@ -14,6 +15,37 @@ app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.render("index");
+});
+
+app.get("/login", (req, res) => {
+  res.render("login");
+});
+
+app.get("/logout", (req, res) => {
+  res.cookie("token", "");
+  res.redirect("/login");
+});
+
+app.get("/profile", isLoggedIn, async (req, res) => {
+  let user = await userModel.findOne({email: req.user.email}).populate("posts")
+  res.render("profile",{user})
+});
+
+app.get("/like/:id", isLoggedIn, async (req, res) => {
+  let post = await postModel.findOne({_id: req.params.id}).populate("user")
+  if(post.likes.indexOf(req.user.userid) === -1){
+    post.likes.push(req.user.userid);
+  }
+  else{
+    post.likes.splice(post.likes.indexOf(req.user.userid), 1);
+  }
+  await post.save();
+  res.redirect("/profile")
+});
+
+app.get("/edit/:id", isLoggedIn, async (req, res) => {
+  let post = await postModel.findOne({_id: req.params.id}).populate("user")
+  res.render("edit",{post});
 });
 
 app.post("/register", async (req, res) => {
@@ -38,10 +70,6 @@ app.post("/register", async (req, res) => {
   });
 });
 
-app.get("/login", (req, res) => {
-  res.render("login");
-});
-
 app.post("/login", async (req, res) => {
   let { email, password } = req.body;
   let user = await userModel.findOne({ email });
@@ -55,16 +83,6 @@ app.post("/login", async (req, res) => {
       res.status(200).redirect("/profile");
     } else res.redirect("/login");
   });
-});
-
-app.get("/logout", (req, res) => {
-  res.cookie("token", "");
-  res.redirect("/login");
-});
-
-app.get("/profile", isLoggedIn, async (req, res) => {
-  let user = await userModel.findOne({email: req.user.email}).populate("posts")
-  res.render("profile",{user})
 });
 
 app.post("/post", isLoggedIn, async (req, res) => {
