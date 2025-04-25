@@ -5,17 +5,40 @@ const app = express();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const postModel = require("./models/post");
-const e = require("express");
+const multerconfig = require("./config/multerconfig");
+const path = require("path");
+const upload = require("./config/multerconfig");
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname,"public")));
 app.use(express.json());
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.render("index");
 });
+
+app.get("/profile/upload", (req, res) => {
+  res.render("profileupload");
+});
+
+app.post("/upload", isLoggedIn, upload.single("image"), async (req, res) => {
+   // 🧪 Debug: Log what's coming in
+   console.log("Body:", req.body);
+   console.log("File:", req.file);
+  if (!req.file) {
+    console.log("No file uploaded");  // Add this line
+    return res.status(400).send("No file uploaded");
+  }
+
+  let user = await userModel.findOne({ email: req.user.email });
+  user.profilepic = req.file.filename;
+  await user.save();
+  res.redirect("/profile");
+});
+
+
 
 app.get("/login", (req, res) => {
   res.render("login");
@@ -26,12 +49,22 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
+// app.get("/profile", isLoggedIn, async (req, res) => {
+//   let user = await userModel
+//     .findOne({ email: req.user.email })
+//     .populate("posts");
+//   res.render("profile", { user });
+// });
+
 app.get("/profile", isLoggedIn, async (req, res) => {
-  let user = await userModel
-    .findOne({ email: req.user.email })
-    .populate("posts");
-  res.render("profile", { user });
+  let currentUser = await userModel.findOne({ email: req.user.email });
+  let posts = await postModel.find({})
+    .populate("user")
+    .sort({ date: -1 });
+
+  res.render("profile", { currentUser, posts });
 });
+
 
 app.get("/like/:id", isLoggedIn, async (req, res) => {
   let post = await postModel.findOne({ _id: req.params.id }).populate("user");
@@ -105,6 +138,15 @@ app.post("/post", isLoggedIn, async (req, res) => {
   await user.save();
   res.redirect("/profile");
 });
+
+// app.get("/feed", isLoggedIn, async (req, res) => {
+//   const posts = await postModel.find({})
+//     .populate("user") // includes post author's info
+//     .sort({ date: -1 }); // newest first
+
+//   res.render("feed", { posts, currentUserId: req.user.userid });
+// });
+
 
 function isLoggedIn(req, res, next) {
   if (req.cookies.token === "") return res.redirect("/login");
