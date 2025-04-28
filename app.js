@@ -62,7 +62,12 @@ app.get("/profile", isLoggedIn, async (req, res) => {
     .populate("user")
     .sort({ date: -1 });
 
-  res.render("profile", { currentUser, posts });
+    res.render("profile", {
+      currentUser,
+      posts,
+      currentUserId: currentUser._id.toString(),
+    });
+    
 });
 
 

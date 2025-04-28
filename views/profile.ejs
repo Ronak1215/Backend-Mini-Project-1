@@ -15,11 +15,12 @@
               src="/images/uploads/<%= currentUser.profilepic %>"
               alt="Profile Picture">
           </div>
-          <h3 class="text-3xl"><span class="font-semibold">Hello,</span> <%=
+          <h3 class="text-3xl md:text-3xl"><span
+              class="font-semibold">Hello,</span> <%=
             currentUser.name %>👋</h3>
         </div>
         <div>
-         <a
+          <a
             class="bg-white text-black  rounded-md px-3 py-2 text-sm mb-5 inline-block"
             href="profile/upload">Edit Profile</a>
           <a class="bg-red-500 rounded-md px-3 py-2 text-sm mb-5 inline-block"
@@ -56,8 +57,10 @@
               likes</small>
 
             <div class="btns flex gap-4 mt-2 ml-4">
-              <a class="text-blue-500" href="/like/<%= post._id %>">
-                ❤️
+              <a class="hover:scale-110 transition-transform"
+                href="/like/<%= post._id %>">
+                <%= post.likes.map(like =>
+                like.toString()).includes(currentUserId) ? "❤️" : "🩶" %>
               </a>
 
               <% if (post.user._id.toString() === currentUser._id.toString()) {
@@ -65,6 +68,7 @@
               <a class="text-zinc-400" href="/edit/<%= post._id %>">✏️ Edit</a>
               <% } %>
             </div>
+
           </div>
           <% }) %>
         </div>
